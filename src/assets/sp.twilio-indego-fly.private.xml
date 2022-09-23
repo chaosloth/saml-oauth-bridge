@@ -1,0 +1,9 @@
+<EntityDescriptor entityID="https://iam.twilio.com/v1/Accounts/ACe0b6fc3a06759c5c012663dc518f07e3/saml2"
+    xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+    xmlns:assertion="urn:oasis:names:tc:SAML:2.0:assertion"
+    xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    <SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+        <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://iam.twilio.com/v1/Accounts/ACe0b6fc3a06759c5c012663dc518f07e3/saml2" index="0" isDefault="true"/>
+    </SPSSODescriptor>
+</EntityDescriptor>
