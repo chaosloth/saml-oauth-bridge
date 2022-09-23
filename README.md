@@ -54,3 +54,7 @@ Some tools that are useful
 
 Use a service like IAMShowcase.com to test IDP/SP flows
 https://sptest.iamshowcase.com/ixs?idp=6f6881607c94119d87eb0d84dd13c284552a1cce
+
+## SAML Test.id
+
+Another great testing tool
