@@ -1,5 +1,6 @@
 # Secure files
 *.pem
+keys/
 
 # Twilio Serverless
 .twiliodeployinfo

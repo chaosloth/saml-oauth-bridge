@@ -1,8 +1,8 @@
-# SAML OAUTH Bridge in Twilio Serverless
+# SAML OAUTH (OpenID Connect) Bridge in Twilio Serverless
 
-A relatively simple SAML to OAUTH bridge as a serverless project.
+A relatively simple SAML to OID (based on OAuth 2.0) bridge as a serverless project.
 
-You might use if you had an application that only supports SAML and you wish to connect it to an IDP that only supports OAUTH. Note there are commercial solutions out there that do this as a service (e.g Auth0, MS AFDS, Okta, OneLogin, etc)
+You might use if you had an application that only supports SAML and you wish to connect it to an IDP that only supports OpenID Connect. Note there are commercial solutions out there that do this as a service (e.g Auth0, MS AFDS, Okta, OneLogin, etc)
 
 **_Features:_**
 
@@ -10,6 +10,7 @@ You might use if you had an application that only supports SAML and you wish to 
 - ✅ SP may be configured from XML file
 - ✅ IDP Metadata generated on the fly
 - ✅ 100% server side and stateless
+- ✅ Open Connect ID compliant
 
 ## Twilio Flex
 
@@ -46,7 +47,7 @@ Minimum settings required to respond to Service Provider
 
 Note: the meta data file may contain the SP public key etc for signature validation etc.
 
-## Configure the OAUTH Provider
+## Configure the OAUTH (Open ID Connect) Provider
 
 Configure the OAUTH provider as per your authentication (client) settings
 
