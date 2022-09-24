@@ -1,12 +1,7 @@
 import * as saml from "samlify";
 import * as uuid from "uuid";
-import {
-  IdentityProviderConstructor,
-  IdentityProviderSettings,
-} from "samlify/types/src/types";
-import { IdentityProvider } from "samlify/types/src/entity-idp";
-import { ServiceProvider } from "samlify/types/src/entity-sp";
-import { BindingNamespace } from "samlify/types/src/urn";
+import { IdentityProviderConstructor } from "samlify/types/src/types";
+
 import {
   Context,
   ServerlessCallback,
@@ -39,7 +34,19 @@ export type Binding = {
 
 export type StateTransfer = {
   request_id: string;
-  RelayState?: string;
+  RelayState: string;
+};
+
+// ***************************************************
+// ASSET LOADER
+// ***************************************************
+export const loadAsset = (file: string | undefined) => {
+  if (!file) throw "Attempted to load asset with undefined file name";
+  try {
+    return Runtime.getAssets()[`/${file}`].open().trim();
+  } catch (e) {
+    throw new Error(`File not found: /assets/${file}.`);
+  }
 };
 
 // ***************************************************
@@ -56,7 +63,7 @@ saml.setSchemaValidator({
 // DEFINE OUR SP
 // ***************************************************
 export const sp = saml.ServiceProvider({
-  metadata: Runtime.getAssets()["/" + process.env.SP_METADATA_XML_FILE].open(),
+  metadata: loadAsset(process.env.SP_METADATA_XML_FILE),
   isAssertionEncrypted: false,
 });
 // export const sp = saml.ServiceProvider({ isAssertionEncrypted: false });
@@ -69,9 +76,8 @@ export const idp: IdentityProviderConstructor = saml.IdentityProvider({
   entityID: process.env.IDP_ENTITY_ID,
   isAssertionEncrypted: false,
 
-  signingCert: Runtime.getAssets()["/" + process.env.IDP_CERT_FILE].open(),
-  privateKey:
-    Runtime.getAssets()["/" + process.env.IDP_PRIVATE_KEY_FILE].open(), // in .pem format
+  signingCert: loadAsset(process.env.IDP_CERT_FILE),
+  privateKey: loadAsset(process.env.IDP_PRIVATE_KEY_FILE), // in .pem format
   privateKeyPass: process.env.IDP_PRIVATE_KEY_PASS || "", // optional if your key file is not protected
   // encryptCert:
   //   Runtime.getAssets()["/" + process.env.IDP_ENCRYPT_CERT_FILE].open(), // in .pem format
@@ -91,9 +97,7 @@ export const idp: IdentityProviderConstructor = saml.IdentityProvider({
   ],
   nameIDFormat: [saml.Constants.namespace.format.emailAddress],
   loginResponseTemplate: {
-    context: Runtime.getAssets()
-      ["/" + process.env.SAML_TMPL_LOGIN_RESPONSE].open()
-      .trim(),
+    context: loadAsset(process.env.SAML_TMPL_LOGIN_RESPONSE).trim(),
   },
 });
 

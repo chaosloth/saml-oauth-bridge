@@ -75,3 +75,11 @@ https://sptest.iamshowcase.com/ixs?idp=6f6881607c94119d87eb0d84dd13c284552a1cce
 ## SAML Test.id
 
 Another great testing tool
+
+## OIDC Debug
+
+https://oidcdebugger.com/
+
+## Generating client secret for Sign In with Apple
+
+https://developer.okta.com/blog/2019/06/04/what-the-heck-is-sign-in-with-apple

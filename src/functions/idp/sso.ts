@@ -4,7 +4,10 @@ import {
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
 
-import { sp, idp, Oidc, StateTransfer, encode } from "../common";
+import * as Common from "../common.protected";
+const { sp, idp, Oidc, encode } = <typeof Common>(
+  require(Runtime.getFunctions()["common"].path)
+);
 
 type SSORequestEvent = {
   SAMLRequest?: string;
@@ -32,50 +35,68 @@ export const handler: ServerlessFunctionSignature<
   console.log("IDP/SSO: New event arrived", event);
   const response = new Twilio.Response();
 
-  let { SAMLRequest, RelayState } = event;
-
   try {
     // ***************************************************************************
-    // Ingest the SAML request from SP
+    // Pull out the SAMLRequest and RelayState
     // ***************************************************************************
+    if (!event.SAMLRequest) throw "SAMLRequest not found for processing";
+    if (!event.RelayState) throw "RelayState not found, needed for callback";
+
+    // Redirect flow expects SAMLRequest as key in the query
+    // Post flow expects the SAMLRequest in the body
     const { extract } = await idp.parseLoginRequest(sp, "redirect", {
-      body: SAMLRequest,
-      query: event,
+      body: event.SAMLRequest,
+      query: { SAMLRequest: event.SAMLRequest },
     });
+
+    console.log("IDP/SSO: SP Request", extract);
 
     const constructedRequestInfo = {
       extract: { request: { id: extract.request.id } },
     };
 
-    console.log("IDP/SSO: SP Request", extract);
+    // ***************************************************************************
+    //
+    // TODO: Ensure validation of incoming SAMLRequest
+    //
+    // ***************************************************************************
+
+    const state_transfer: Common.StateTransfer = {
+      RelayState: event.RelayState,
+      request_id: extract.request.id,
+    };
 
     // ***************************************************************************
     // Call upstream OAuth provider
     // ***************************************************************************
+    const state = encode(JSON.stringify(state_transfer));
+
     let oidc = await Oidc();
 
     let redirect_url = oidc.client.authorizationUrl({
       scope: context.OAUTH_SCOPES,
       response_mode: context.OAUTH_RESPONSE_MODE || "form_post",
       response_type: context.OAUTH_RESPONSE_TYPE || "code",
+      state: encodeURI(state),
     });
 
     if (!redirect_url || redirect_url === "")
       throw "OIDC client auth URL is blank";
 
-    if (!RelayState || !extract.request.id)
-      throw "SAML RelayState or request_id not found";
-
-    const state: StateTransfer = {
-      request_id: extract.request.id,
-      RelayState: RelayState,
-    };
-
-    redirect_url += "&state=" + encode(JSON.stringify(state));
-
     console.log("IDP/SSO redirecting client to:", redirect_url);
-    response.appendHeader("location", redirect_url);
-    response.setStatusCode(302);
+
+    // ***************************************************************************
+    // Construct a simple web form to auto-fetch response
+    // ***************************************************************************
+    let redirectForm = `
+    <html>
+      <body onload="document.location='${redirect_url}'"/>
+    </html>
+    `;
+    response.setBody(redirectForm);
+
+    // response.appendHeader("location", redirect_url);
+    // response.setStatusCode(302);
   } catch (e) {
     // Possible errors: Ensure SP meta data has appropriate AssertionConsumerService binding(s)
     console.error("[FATAL] when parsing login response from IDP.", e);

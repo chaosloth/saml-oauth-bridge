@@ -2,9 +2,9 @@
   "name": "saml-oauth-bridge",
   "author": "Christopher Connolly",
   "version": "1.0.0",
-  "description": "SAML to OAUTH bridge implemented as IDP",
+  "description": "SAML to OpenIDConnect bridge implemented as IDP",
   "private": true,
-  "license": "Private",
+  "license": "ISC",
   "scripts": {
     "test": "tsc --noEmit",
     "start": "twilio-run --functions-folder dist/functions --assets-folder dist/assets",
@@ -13,21 +13,17 @@
     "build:copy-assets": "copyfiles src/assets/* src/assets/**/* --up 2 --exclude **/*.ts dist/assets/",
     "prestart": "npm run build",
     "predeploy": "npm run build",
-    "next-build": "next build && next export -o assets/",
-    "next-start": "next start",
-    "dev": "next dev"
+    "next:build": "next build && next export -o assets/",
+    "next:start": "next start",
+    "next:dev": "next dev"
   },
   "dependencies": {
     "@twilio-labs/serverless-runtime-types": "^1.1",
-    "@twilio-paste/core": "^15.1.0",
-    "@twilio-paste/icons": "^9.0.0",
     "@twilio/runtime-handler": "1.2.3",
     "@types/express-serve-static-core": "^4.17.31",
     "body-parser": "^1.20.0",
+    "openid-client": "^5.1.9",
     "prop-types": "^15.8.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "3.4.3",
     "samlify": "^2.8.5",
     "twilio": "^3.56",
     "uuid": "^9.0.0"
@@ -40,11 +36,6 @@
   },
   "engines": {
     "node": "14"
-  },
-  "resolutions": {
-    "@types/react": "^17.0.31",
-    "@types/express-serve-static-core": "4.17.20",
-    "@types/express": "4.17.2"
   },
   "eslintConfig": {
     "extends": "react-app"

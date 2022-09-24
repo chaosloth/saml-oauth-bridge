@@ -7,7 +7,8 @@ import {
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
 
-import { idp } from "../common";
+import * as Common from "../common.protected";
+const { idp } = <typeof Common>require(Runtime.getFunctions()["common"].path);
 
 export const handler: ServerlessFunctionSignature = async function (
   context: Context,

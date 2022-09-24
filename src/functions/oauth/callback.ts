@@ -5,16 +5,11 @@ import {
   ServerlessCallback,
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
-import {
-  Binding,
-  createTemplateCallback,
-  decode,
-  FlexUserType,
-  idp,
-  Oidc,
-  sp,
-  StateTransfer,
-} from "../common";
+
+import * as Common from "../common.protected";
+const { createTemplateCallback, decode, idp, Oidc, sp } = <typeof Common>(
+  require(Runtime.getFunctions()["common"].path)
+);
 
 import { generators } from "openid-client";
 import * as saml from "samlify";
@@ -45,7 +40,7 @@ export const handler: ServerlessFunctionSignature<
     // ***************************************************************************
     // VALIDATE OAUTH TOKENS
     // ***************************************************************************
-    if (!event.code) throw "code not found in request";
+    if (!event.code) throw "OAUTH code not found in request";
     let oidc = await Oidc();
 
     const nonce = generators.nonce();
@@ -61,7 +56,6 @@ export const handler: ServerlessFunctionSignature<
     // ***************************************************************************
     // GET USER INFO FROM OAUTH PROVIDER
     // ***************************************************************************
-
     let userInfo = await oidc.client.userinfo(tokenSet);
     console.log("Got user info", userInfo);
     console.log("Returning state", event.state);
@@ -69,7 +63,7 @@ export const handler: ServerlessFunctionSignature<
     // ***************************************************************************
     // CONSTRUCT USER INFO FROM OAUTH
     // ***************************************************************************
-    const user: FlexUserType = {
+    const user: Common.FlexUserType = {
       email: userInfo.email || userInfo.sub,
       full_name: userInfo.name || "OAuth User",
       image_url: userInfo.picture,
@@ -77,17 +71,22 @@ export const handler: ServerlessFunctionSignature<
     };
 
     // ***************************************************************************
-    // Create our SAML response
+    // Ingest the State Transfer to send back to the SP
     // ***************************************************************************
-    if (!event.state) throw "OAUTH state not found";
-    const state: StateTransfer = JSON.parse(decode(event.state));
-
+    if (!event.state)
+      throw "OAUTH state not found, needed to reconstruct StateTransfer";
+    const state: Common.StateTransfer = JSON.parse(
+      decode(decodeURI(event.state))
+    );
     console.log("Decoded state", state);
 
     const constructedRequestInfo = {
       extract: { request: { id: state.request_id } },
     };
 
+    // ***************************************************************************
+    // Create our SAML response
+    // ***************************************************************************
     const {
       id,
       context: SAMLResponse,
@@ -101,7 +100,6 @@ export const handler: ServerlessFunctionSignature<
         idp,
         sp,
         saml.Constants.namespace.binding.post,
-        // extract.request.id,
         constructedRequestInfo.extract.request.id,
         user,
         context.ACCOUNT_SID
@@ -120,7 +118,8 @@ export const handler: ServerlessFunctionSignature<
     if (Array.isArray(sp.entityMeta.meta.assertionConsumerService)) {
       // Get the Service Provide ACS URL from our pre-configured meta data (not from the request)
       spAcsUrl = sp.entityMeta.meta.assertionConsumerService.find(
-        (e: Binding) => e.binding === saml.Constants.BindingNamespace.Post
+        (e: Common.Binding) =>
+          e.binding === saml.Constants.BindingNamespace.Post
       ).location;
     } else {
       spAcsUrl = sp.entityMeta.meta.assertionConsumerService.location;

@@ -6,9 +6,9 @@ import {
   ServerlessCallback,
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
-import { Oidc } from "../common";
 
-import { generators } from "openid-client";
+import * as Common from "../common.protected";
+const { Oidc } = <typeof Common>require(Runtime.getFunctions()["common"].path);
 
 type OAUTHLoginContext = {
   OAUTH_RESPONSE_TYPES: string;

@@ -2,7 +2,6 @@
 import "@twilio-labs/serverless-runtime-types";
 // Fetches specific types
 import {
-  Context,
   ServerlessCallback,
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
