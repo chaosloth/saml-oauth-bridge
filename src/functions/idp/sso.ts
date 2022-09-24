@@ -4,15 +4,7 @@ import {
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
 
-import {
-  sp,
-  idp,
-  createTemplateCallback,
-  Binding,
-  FlexUserType,
-} from "../common";
-import * as saml from "samlify";
-import { PostBindingContext } from "samlify/types/src/entity";
+import { sp, idp, Oidc, StateTransfer, encode } from "../common";
 
 type SSORequestEvent = {
   SAMLRequest?: string;
@@ -23,6 +15,10 @@ type SSORequestEvent = {
 
 type SSORequestContext = {
   ACCOUNT_SID: string;
+  OAUTH_RESPONSE_TYPES: string;
+  OAUTH_SCOPES: string;
+  OAUTH_RESPONSE_MODE: string;
+  OAUTH_RESPONSE_TYPE: string;
 };
 
 export const handler: ServerlessFunctionSignature<
@@ -54,81 +50,37 @@ export const handler: ServerlessFunctionSignature<
     console.log("IDP/SSO: SP Request", extract);
 
     // ***************************************************************************
-    // TODO: Call upstream database / OAuth provider
+    // Call upstream OAuth provider
     // ***************************************************************************
-    const user: FlexUserType = {
-      email: "jonas@megatron.com",
-      full_name: "Jonas Megatron",
-      roles: "agent",
+    let oidc = await Oidc();
+
+    let redirect_url = oidc.client.authorizationUrl({
+      scope: context.OAUTH_SCOPES,
+      response_mode: context.OAUTH_RESPONSE_MODE || "form_post",
+      response_type: context.OAUTH_RESPONSE_TYPE || "code",
+    });
+
+    if (!redirect_url || redirect_url === "")
+      throw "OIDC client auth URL is blank";
+
+    if (!RelayState || !extract.request.id)
+      throw "SAML RelayState or request_id not found";
+
+    const state: StateTransfer = {
+      request_id: extract.request.id,
+      RelayState: RelayState,
     };
 
-    // ***************************************************************************
-    // Create our SAML response
-    // ***************************************************************************
-    const {
-      id,
-      context: SAMLResponse,
-      type,
-    } = (await idp.createLoginResponse(
-      sp,
-      constructedRequestInfo,
-      "post",
-      user,
-      createTemplateCallback(
-        idp,
-        sp,
-        saml.Constants.namespace.binding.post,
-        extract.request.id,
-        user,
-        context.ACCOUNT_SID
-      ),
-      true,
-      RelayState
-    )) as PostBindingContext;
+    redirect_url += "&state=" + encode(JSON.stringify(state));
 
-    // ***************************************************************************
-    // Get the ACS URL from metadata (!! Do not trust request ACS URL !!)
-    // ***************************************************************************
-
-    let spAcsUrl: string = "";
-
-    // console.log("IDP/SSO: SP Meta:", sp.entityMeta.meta);
-    if (Array.isArray(sp.entityMeta.meta.assertionConsumerService)) {
-      // Get the Service Provide ACS URL from our pre-configured meta data (not from the request)
-      spAcsUrl = sp.entityMeta.meta.assertionConsumerService.find(
-        (e: Binding) => e.binding === saml.Constants.BindingNamespace.Post
-      ).location;
-    } else {
-      spAcsUrl = sp.entityMeta.meta.assertionConsumerService.location;
-    }
-
-    if (!spAcsUrl && spAcsUrl == "")
-      throw "SP ACS URL not configured, check SP metadata for POST binding";
-
-    console.log("IDP/SSO: SP ACS URL:", spAcsUrl);
-
-    // ***************************************************************************
-    // Construct a simple web form to auto-submit SAML response
-    // ***************************************************************************
-    let loginForm = `
-    <html>
-      <body onload="document.forms[0].submit()">
-        <form id="sso" method="post" action="${spAcsUrl}" autocomplete="off">
-          <input type="hidden" name="SAMLResponse" id="resp" value="${SAMLResponse}" />
-          <input type="hidden" name="RelayState" id="resp" value="${RelayState}" />
-        </form>
-      </body>
-    </html>
-    `;
-
-    console.log("IDP/SSO: IDP Login Response", loginForm);
-    response.setBody(loginForm);
-    return callback(null, response);
+    console.log("IDP/SSO redirecting client to:", redirect_url);
+    response.appendHeader("location", redirect_url);
+    response.setStatusCode(302);
   } catch (e) {
     // Possible errors: Ensure SP meta data has appropriate AssertionConsumerService binding(s)
     console.error("[FATAL] when parsing login response from IDP.", e);
-    response.setHeaders({ location: "/" });
-    response.setStatusCode(302);
+    response.setBody(e ? e : "See logs");
+    response.setStatusCode(500);
   }
 
   return callback(null, response);

@@ -18,14 +18,12 @@
     "dev": "next dev"
   },
   "dependencies": {
-    "@authenio/samlify-xsd-schema-validator": "^1.0.3",
     "@twilio-labs/serverless-runtime-types": "^1.1",
     "@twilio-paste/core": "^15.1.0",
     "@twilio-paste/icons": "^9.0.0",
     "@twilio/runtime-handler": "1.2.3",
     "@types/express-serve-static-core": "^4.17.31",
     "body-parser": "^1.20.0",
-    "next": "^12.2.5",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

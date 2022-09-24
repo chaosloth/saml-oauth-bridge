@@ -46,6 +46,22 @@ Minimum settings required to respond to Service Provider
 
 Note: the meta data file may contain the SP public key etc for signature validation etc.
 
+## Configure the OAUTH Provider
+
+Configure the OAUTH provider as per your authentication (client) settings
+
+Note: This app will use the discovery protocol to retrieve details
+
+| Variable            | Purpose                                             | Example Value                   | Required |
+| ------------------- | --------------------------------------------------- | ------------------------------- | -------- |
+| OAUTH_ISSUER_URI    | OAuth issuer endpoint                               | https://dev-xxxxx.us.auth0.com  | yes      |
+| OAUTH_CLIENT_ID     | Registered client ID                                | weoinqpien13                    | yes      |
+| OAUTH_CLIENT_SECRET | Client secret                                       | 09283f092j3f09                  | yes      |
+| OAUTH_REDIRECT_URI  | Your URL endpoint where token/code will be returned | https://magic-spoon-123.twil.io | yes      |
+| OAUTH_SCOPES        | Which scopes to request                             | openid email profile            | yes      |
+| OAUTH_RESPONSE_MODE | Response mode (default is 'form')                   | form                            | no       |
+| OAUTH_RESPONSE_TYPE | Response type (default is 'code')                   | id_token                        | no       |
+
 # Debugging
 
 Some tools that are useful

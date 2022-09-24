@@ -7,6 +7,13 @@ import {
 import { IdentityProvider } from "samlify/types/src/entity-idp";
 import { ServiceProvider } from "samlify/types/src/entity-sp";
 import { BindingNamespace } from "samlify/types/src/urn";
+import {
+  Context,
+  ServerlessCallback,
+  ServerlessFunctionSignature,
+} from "@twilio-labs/serverless-runtime-types/types";
+
+import { Issuer } from "openid-client";
 
 // ***************************************************
 // DEFINE EXPECTED FLEX USER PROPS
@@ -15,6 +22,7 @@ export type FlexUserType = {
   email: string;
   full_name: string;
   roles: string;
+  image_url?: string;
   department?: string;
   location?: string;
   manager?: string;
@@ -27,6 +35,11 @@ export type FlexUserType = {
 export type Binding = {
   binding: string;
   location: string;
+};
+
+export type StateTransfer = {
+  request_id: string;
+  RelayState?: string;
 };
 
 // ***************************************************
@@ -163,84 +176,45 @@ export const createTemplateCallback =
     };
   };
 
-// ***************************************************
-// START: KNOWN WORKING TEST WITH HTTP://SAMLTEST.ID
-// export const idp: IdentityProviderConstructor =
-//   saml.IdentityProvider({
-//     metadata: Runtime.getAssets()["/" + process.env.IDP_METADATA_XML_FILE].open(), // metadata in xml format
-//     isAssertionEncrypted: true,
-//     messageSigningOrder: "encrypt-then-sign",
-//   });
-//
-// export const sp = saml.ServiceProvider({
-//   entityID: "http://localhost:3000/sp/metadata",
-//   authnRequestsSigned: false,
-//   wantAssertionsSigned: false,
-//   wantMessageSigned: false,
-//   wantLogoutResponseSigned: false,
-//   wantLogoutRequestSigned: false,
-//   signingCert: Runtime.getAssets()["/" + process.env.SP_CERT_FILE].open(),
-//   privateKey: Runtime.getAssets()["/" + process.env.SP_PRIVATE_KEY_FILE].open(),
-//   privateKeyPass: process.env.SP_PRIVATE_KEY_PASS,
-//   encryptCert:
-//     Runtime.getAssets()["/" + process.env.SP_ENCRYPT_CERT_FILE].open(),
-//   encPrivateKey:
-//     Runtime.getAssets()["/" + process.env.SP_ENCRYPT_KEY_FILE].open(),
-//   // encPrivateKeyPass: process.env.SP_ENCRYPT_KEY_PASS,
-//   isAssertionEncrypted: false,
-//   assertionConsumerService: [
-//     {
-//       Binding: saml.Constants.BindingNamespace.Post,
-//       Location: "http://localhost:3000/sp/acs",
-//     },
-//   ],
-// });
-// END: KNOWN WORKING WITH HTTP://SAMLTEST.ID
-// ***************************************************
+export const handler: ServerlessFunctionSignature = async function (
+  context: Context,
+  event: {},
+  callback: ServerlessCallback
+) {
+  return callback(null, "Nothing to see here,  move along");
+};
 
-//
 // ***************************************************
-// EXAMPLE MODIFICATION OF SAML RESPONSE
+// DEFINE OIDC CLIENT
 // ***************************************************
-// export const createTemplateCallback =
-//   (
-//     _idp: IdentityProvider,
-//     _sp: ServiceProvider,
-//     _binding: BindingNamespace,
-//     user: any
-//   ) =>
-//   (template: any) => {
-//     const _id = "_8e8dc5f69a98cc4c1ff3427e5ce34606fd672f91e6";
-//     const now = new Date();
-//     const spEntityID = _sp.entityMeta.getEntityID();
-//     const idpSetting = _idp.entitySetting;
-//     const fiveMinutesLater = new Date(now.getTime());
-//     fiveMinutesLater.setMinutes(fiveMinutesLater.getMinutes() + 5);
-//     const tvalue = {
-//       ID: _id,
-//       AssertionID: idpSetting.generateID
-//         ? idpSetting.generateID()
-//         : `${uuid.v4()}`,
-//       Destination: _sp.entityMeta.getAssertionConsumerService(_binding),
-//       Audience: spEntityID,
-//       SubjectRecipient: spEntityID,
-//       NameIDFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
-//       NameID: user.email,
-//       Issuer: idp.entityMeta.getEntityID(),
-//       IssueInstant: now.toISOString(),
-//       ConditionsNotBefore: now.toISOString(),
-//       ConditionsNotOnOrAfter: fiveMinutesLater.toISOString(),
-//       SubjectConfirmationDataNotOnOrAfter: fiveMinutesLater.toISOString(),
-//       AssertionConsumerServiceURL:
-//         _sp.entityMeta.getAssertionConsumerService(_binding),
-//       EntityID: spEntityID,
-//       InResponseTo: "_4606cc1f427fa981e6ffd653ee8d6972fc5ce398c4",
-//       StatusCode: "urn:oasis:names:tc:SAML:2.0:status:Success",
-//       attrUserEmail: "myemailassociatedwithsp@sp.com",
-//       attrUserName: "mynameinsp",
-//     };
-//     return {
-//       id: _id,
-//       context: saml.SamlLib.replaceTagsByValue(template, tvalue),
-//     };
-//   };
+export const Oidc = async () => {
+  if (!process.env.OAUTH_ISSUER_URI || process.env.OAUTH_ISSUER_URI == "")
+    throw "Issuer not configured in .env";
+  const issuer = await Issuer.discover(process.env.OAUTH_ISSUER_URI);
+  // console.log("Discovered issuer %s %O", issuer.issuer, issuer.metadata);
+  console.log("Discovered issuer %s", issuer.issuer);
+
+  if (!process.env.OAUTH_CLIENT_ID || process.env.OAUTH_CLIENT_ID == "")
+    throw "OAUTH_CLIENT_ID not configured in .env";
+  const client = new issuer.Client({
+    client_id: process.env.OAUTH_CLIENT_ID,
+    client_secret: process.env.OAUTH_CLIENT_SECRET,
+    redirect_uris: process.env.OAUTH_REDIRECT_URI
+      ? process.env.OAUTH_REDIRECT_URI.split(" ")
+      : [],
+    response_types: process.env.OAUTH_RESPONSE_TYPES
+      ? process.env.OAUTH_RESPONSE_TYPES.split(" ")
+      : [],
+  });
+
+  return { issuer, client };
+};
+
+// ***************************************************
+// HELPER METHODS
+// ***************************************************
+export const decode = (str: string): string =>
+  Buffer.from(str, "base64").toString("binary");
+
+export const encode = (str: string): string =>
+  Buffer.from(str, "binary").toString("base64");
