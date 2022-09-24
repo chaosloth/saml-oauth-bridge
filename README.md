@@ -1,6 +1,6 @@
 # SAML OAUTH (OpenID Connect) Bridge in Twilio Serverless
 
-A relatively simple SAML to OID (based on OAuth 2.0) bridge as a serverless project.
+A relatively simple SAML to OpenID Connect (based on OAuth 2.0) bridge as a serverless project.
 
 You might use if you had an application that only supports SAML and you wish to connect it to an IDP that only supports OpenID Connect. Note there are commercial solutions out there that do this as a service (e.g Auth0, MS AFDS, Okta, OneLogin, etc)
 
