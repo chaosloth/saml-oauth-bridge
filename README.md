@@ -7,10 +7,16 @@ You might use if you had an application that only supports SAML and you wish to 
 **_Features:_**
 
 - ✅ Implements both SP and IDP
-- ✅ SP may be configured from XML file
+- ✅ Open Connect ID compliant
+- ✅ SP may be configured from XML file (can act as an SP too)
 - ✅ IDP Metadata generated on the fly
 - ✅ 100% server side and stateless
-- ✅ Open Connect ID compliant
+
+**_Warnings_**
+
+- ⛔️ SAML XML Validation has been disabled, please enable before using it in anger
+- ⛔️ A nonce should be passed between OAUTH invocations and validated
+- ⛔️ May be subject to replay attack, sure up the validation before using
 
 ## Twilio Flex
 
