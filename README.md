@@ -53,6 +53,8 @@ Minimum settings required to respond to Service Provider
 
 Note: the meta data file may contain the SP public key etc for signature validation etc.
 
+💥 IMPORTANT 💥: Edit the sp.twilio.xml file and adjust the Account SID to match your environment.
+
 ## Configure the OAUTH (Open ID Connect) Provider
 
 Configure the OAUTH provider as per your authentication (client) settings
